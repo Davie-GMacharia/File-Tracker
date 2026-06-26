@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ case_file.reference_number }} - Engineer Law Courts</title>
+    <style>
+        body { font-family: -apple-system, Arial, sans-serif; margin: 0; padding: 16px; background: #f4f4f4; color: #222; }
+        .card { background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        h1 { font-size: 1.3em; margin: 0 0 8px; }
+        .label { color: #666; font-size: 0.85em; text-transform: uppercase; }
+        .value { font-size: 1.1em; margin-bottom: 12px; }
+        .status-active { color: #1a7a1a; font-weight: bold; }
+        .status-closed { color: #999; }
+        .status-archived { color: #b5651d; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; font-size: 0.9em; }
+        th { color: #666; font-weight: normal; }
+        label { display: block; margin-top: 12px; font-size: 0.9em; color: #444; }
+        select, input[type="text"], textarea {
+            width: 100%; padding: 10px; margin-top: 4px; border: 1px solid #ccc;
+            border-radius: 6px; font-size: 1em; box-sizing: border-box;
+        }
+        button {
+            margin-top: 16px; width: 100%; padding: 12px; background: #1a5fb4;
+            color: #fff; border: none; border-radius: 6px; font-size: 1em; font-weight: bold;
+        }
+        button:active { background: #14478a; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>{{ case_file.reference_number }}</h1>
+        <div class="label">Title</div>
+        <div class="value">{{ case_file.title|default:"—" }}</div>
+        <div class="label">Registry</div>
+        <div class="value">{{ case_file.get_registry_display }}</div>
+        <div class="label">Status</div>
+        <div class="value status-{{ case_file.status|lower }}">{{ case_file.get_status_display }}</div>
+        <div class="label">Current Location</div>
+        <div class="value"><strong>{{ case_file.current_location|default:"Unknown" }}</strong></div>
+    </div>
+
+    <div class="card">
+        <h1>Log a Movement</h1>
+        <form method="post">
+            {% csrf_token %}
+            <label for="to_location">Moving to</label>
+            <select name="to_location" id="to_location" required>
+                <option value="">Select location…</option>
+                {% for location in locations %}
+                <option value="{{ location.id }}">{{ location.name }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="handled_by">Your name</label>
+            <input type="text" name="handled_by" id="handled_by" required>
+
+            <label for="remarks">Remarks (optional)</label>
+            <textarea name="remarks" id="remarks" rows="2"></textarea>
+
+            <button type="submit">Log Movement</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h1>Movement History</h1>
+        <table>
+            <tr><th>From</th><th>To</th><th>Handled By</th><th>When</th></tr>
+            {% for movement in movements %}
+            <tr>
+                <td>{{ movement.from_location|default:"—" }}</td>
+                <td>{{ movement.to_location }}</td>
+                <td>{{ movement.handled_by }}</td>
+                <td>{{ movement.timestamp|date:"d M Y, H:i" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4">No movements recorded yet.</td></tr>
+            {% endfor %}
+        </table>
+    </div>
+</body>
+</html>
