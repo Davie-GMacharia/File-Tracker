@@ -5,3 +5,9 @@ db.sqlite3
 media/
 .DS_Store
 *.env
+.env
+qr_codes/
+frontend/dist/
+.env
+qr_codes/
+frontend/dist/
