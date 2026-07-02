@@ -54,10 +54,12 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'filetracker.urls'
 
+FRONTEND_DIR = BASE_DIR / 'frontend' / 'dist'
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'frontend' / 'dist'],
+        'DIRS': [FRONTEND_DIR],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -90,9 +92,12 @@ TIME_ZONE = 'Africa/Nairobi'
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [FRONTEND_DIR / 'assets']
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+WHITENOISE_ROOT = FRONTEND_DIR
 
 MEDIA_URL = '/media/'
 
