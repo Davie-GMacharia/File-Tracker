@@ -96,7 +96,6 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [FRONTEND_DIR / 'assets']
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
 WHITENOISE_ROOT = FRONTEND_DIR
 
 MEDIA_URL = '/media/'
