@@ -1,17 +1,17 @@
 import qrcode
 from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
+from django.conf import settings
 from django.core.files.base import ContentFile
 from django.db import models
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+from cloudinary_storage.storage import MediaCloudinaryStorage
 
-SERVER_BASE_URL = "http://10.37.111.14:8000"
 QR_CAPTION = "Scan to view file location & history"
 
 
 class Location(models.Model):
-    """A physical location within the court where files can be held."""
     name = models.CharField(max_length=100, unique=True)
 
     def __str__(self):
@@ -22,8 +22,6 @@ class Location(models.Model):
 
 
 class CaseFile(models.Model):
-    """A physical case file being tracked through the court."""
-
     REGISTRY_CHOICES = [
         ('CRIMINAL', 'Criminal'),
         ('CIVIL', 'Civil'),
@@ -36,22 +34,26 @@ class CaseFile(models.Model):
         ('ARCHIVED', 'Archived'),
     ]
 
-    reference_number = models.CharField(max_length=50, unique=True, help_text="e.g. MCSOE033/2022")
-    title = models.CharField(max_length=255, blank=True, help_text="Case title or parties involved")
+    reference_number = models.CharField(max_length=50, unique=True)
+    title = models.CharField(max_length=255, blank=True)
     registry = models.CharField(max_length=20, choices=REGISTRY_CHOICES)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ACTIVE')
     current_location = models.ForeignKey(
-        Location, on_delete=models.SET_NULL, null=True, related_name='files_here'
+        Location, on_delete=models.SET_NULL, null=True, blank=True, related_name='files_here'
     )
-    qr_code = models.ImageField(upload_to='qr_codes/', blank=True, null=True)
+    qr_code = models.ImageField(
+        upload_to='qr_codes/',
+        blank=True,
+        null=True,
+        storage=MediaCloudinaryStorage(),
+    )
     created_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
         return self.reference_number
 
     def generate_qr_code(self):
-        """Builds a QR code with a caption underneath, encoding the file's scan URL."""
-        scan_url = f"{SERVER_BASE_URL}/file/{self.reference_number}/"
+        scan_url = f"{settings.SITE_URL}/file/{self.reference_number}/"
 
         qr = qrcode.QRCode(box_size=8, border=2)
         qr.add_data(scan_url)
@@ -59,14 +61,12 @@ class CaseFile(models.Model):
         qr_img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
 
         caption_height = 40
-        canvas = Image.new(
-            "RGB", (qr_img.width, qr_img.height + caption_height), "white"
-        )
+        canvas = Image.new("RGB", (qr_img.width, qr_img.height + caption_height), "white")
         canvas.paste(qr_img, (0, 0))
 
         draw = ImageDraw.Draw(canvas)
         try:
-            font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 16)
+            font = ImageFont.truetype("DejaVuSans.ttf", 16)
         except OSError:
             font = ImageFont.load_default()
 
@@ -82,9 +82,9 @@ class CaseFile(models.Model):
         self.qr_code.save(filename, ContentFile(buffer.getvalue()), save=False)
 
     def save(self, *args, **kwargs):
-        is_new = self.pk is None
+        regenerate = kwargs.pop('regenerate_qr', False)
         super().save(*args, **kwargs)
-        if not self.qr_code:
+        if not self.qr_code or regenerate:
             self.generate_qr_code()
             super().save(update_fields=['qr_code'])
 
@@ -93,8 +93,6 @@ class CaseFile(models.Model):
 
 
 class FileMovement(models.Model):
-    """A single movement event of a case file from one location to another."""
-
     case_file = models.ForeignKey(CaseFile, on_delete=models.CASCADE, related_name='movements')
     from_location = models.ForeignKey(
         Location, on_delete=models.SET_NULL, null=True, blank=True, related_name='movements_from'
@@ -102,7 +100,7 @@ class FileMovement(models.Model):
     to_location = models.ForeignKey(
         Location, on_delete=models.SET_NULL, null=True, related_name='movements_to'
     )
-    handled_by = models.CharField(max_length=100, help_text="Name of staff who handled this movement")
+    handled_by = models.CharField(max_length=100)
     remarks = models.TextField(blank=True)
     timestamp = models.DateTimeField(default=timezone.now)
 
@@ -113,7 +111,7 @@ class FileMovement(models.Model):
                 raise ValidationError({
                     'from_location': (
                         f"This file is currently at '{self.case_file.current_location}', "
-                        f"not '{self.from_location}'. Please correct the from-location."
+                        f"not '{self.from_location}'."
                     )
                 })
 
