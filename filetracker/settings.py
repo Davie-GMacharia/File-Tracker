@@ -125,6 +125,8 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
+    'http://10.37.111.14',
+    'http://10.37.111.14:5173',
 ]
 
 # Initialize Cloudinary with credentials

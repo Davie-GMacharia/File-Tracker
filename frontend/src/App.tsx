@@ -5,6 +5,8 @@ import Navbar from './components/Navbar';
 import CaseFileList from './pages/CaseFileList';
 import NewCaseFile from './pages/NewCaseFile';
 import FileDetail from './pages/FileDetail';
+import MovementsList from './pages/MovementsList';
+import PendingGazettement from './pages/PendingGazettement';
 import './index.css';
 
 function ProtectedLayout() {
@@ -18,6 +20,8 @@ function ProtectedLayout() {
           <Route path="/" element={<CaseFileList />} />
           <Route path="/new" element={<NewCaseFile />} />
           <Route path="/file/:reference_number" element={<FileDetail />} />
+          <Route path="/movements" element={<MovementsList />} />
+          <Route path="/gazettement" element={<PendingGazettement />} />
         </Routes>
       </main>
     </>

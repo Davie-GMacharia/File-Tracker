@@ -62,3 +62,80 @@ input:focus, select:focus, textarea:focus {
 }
 .animate-fadeInUp { animation: fadeInUp 0.5s var(--transition) both; }
 .animate-fadeIn   { animation: fadeIn 0.4s ease both; }
+
+/* ===== Responsive: FileDetail page ===== */
+.file-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 20px;
+  align-items: start;
+}
+
+.qr-sidebar {
+  position: sticky;
+  top: 80px;
+}
+
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.file-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .file-detail-grid {
+    grid-template-columns: 1fr;
+  }
+  .qr-sidebar {
+    position: static;
+  }
+  main {
+    padding: 14px !important;
+  }
+  .card {
+    padding: 16px !important;
+  }
+  .file-header-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .file-header-row > div:last-child {
+    align-items: stretch !important;
+  }
+  .file-header-row button {
+    width: 100%;
+  }
+  input, select, textarea, button.btn {
+    font-size: 16px; /* prevents iOS zoom on focus */
+  }
+}
+
+/* ===== Responsive: Navbar ===== */
+@media (max-width: 768px) {
+  .navbar-inner {
+    flex-wrap: wrap;
+    padding: 10px 14px !important;
+    gap: 10px !important;
+  }
+  .navbar-links {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+  .navbar-user {
+    gap: 8px !important;
+  }
+  .navbar-username {
+    display: none;
+  }
+}
+

@@ -8,12 +8,14 @@ export default function Navbar() {
 
   const links = [
     { path: '/', label: 'Case Files' },
+    { path: '/movements', label: 'Movements' },
+    { path: '/gazettement', label: 'Gazettement' },
     { path: '/new', label: '+ New File' },
   ];
 
   return (
     <nav style={styles.nav}>
-      <div style={styles.inner}>
+      <div className="navbar-inner" style={styles.inner}>
         <div style={styles.brand} onClick={() => navigate('/')}>
           <span style={styles.icons}>⚖️ 🔨</span>
           <div>
@@ -22,7 +24,7 @@ export default function Navbar() {
           </div>
         </div>
 
-        <div style={styles.links}>
+        <div className="navbar-links" style={styles.links}>
           {links.map(l => (
             <button key={l.path} onClick={() => navigate(l.path)}
               style={{ ...styles.link, ...(location.pathname === l.path ? styles.linkActive : {}) }}>
@@ -31,8 +33,8 @@ export default function Navbar() {
           ))}
         </div>
 
-        <div style={styles.userArea}>
-          <span style={styles.userName}>👤 {user?.username}</span>
+        <div className="navbar-user" style={styles.userArea}>
+          <span className="navbar-username" style={styles.userName}>👤 {user?.username}</span>
           <button onClick={logout} className="btn btn-outline" style={{ padding:'6px 14px', fontSize:'0.85em' }}>
             Sign Out
           </button>

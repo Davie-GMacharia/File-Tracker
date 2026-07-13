@@ -30,15 +30,12 @@ export default function AuthPage() {
 
   return (
     <div style={styles.page}>
-      {/* Kenya flag strip */}
       <div style={styles.flagStrip}>
         <div style={{ flex:1, background:'#006600' }} />
         <div style={{ flex:1, background:'#ffffff' }} />
         <div style={{ flex:1, background:'#bb0000' }} />
       </div>
-
       <div style={styles.container} className="animate-fadeInUp">
-        {/* Header */}
         <div style={styles.header}>
           <div style={styles.iconRow}>
             <span style={styles.icon}>⚖️</span>
@@ -47,8 +44,6 @@ export default function AuthPage() {
           <h1 style={styles.title}>Judiciary File Tracker</h1>
           <p style={styles.subtitle}>Engineer Law Courts · Republic of Kenya</p>
         </div>
-
-        {/* Toggle tabs */}
         <div style={styles.tabs}>
           {(['login','signup'] as const).map(m => (
             <button key={m} onClick={() => { setMode(m); setError(''); }}
@@ -57,9 +52,7 @@ export default function AuthPage() {
             </button>
           ))}
         </div>
-
         {error && <div style={styles.error}>{error}</div>}
-
         <form onSubmit={submit} style={styles.form}>
           {mode === 'signup' && (
             <>
@@ -79,12 +72,10 @@ export default function AuthPage() {
               </div>
             </>
           )}
-
           <div style={styles.field}>
             <label style={styles.label}>Username</label>
             <input name="username" placeholder="Username" value={form.username} onChange={handle} required autoFocus />
           </div>
-
           <div style={styles.field}>
             <label style={styles.label}>Password</label>
             <div style={styles.passWrap}>
@@ -98,12 +89,10 @@ export default function AuthPage() {
               </button>
             </div>
           </div>
-
           <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: 8, padding: '13px' }} disabled={loading}>
             {loading ? 'Please wait…' : mode === 'login' ? 'Sign In' : 'Create Account'}
           </button>
         </form>
-
         <div style={styles.flagBottom}>
           <span style={{ color:'#006600', fontWeight:700 }}>■</span>{' '}
           <span style={{ color:'#cc0000', fontWeight:700 }}>■</span>{' '}

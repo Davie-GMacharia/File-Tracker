@@ -38,6 +38,15 @@ class CaseFile(models.Model):
     title = models.CharField(max_length=255, blank=True)
     registry = models.CharField(max_length=20, choices=REGISTRY_CHOICES)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ACTIVE')
+    GAZETTEMENT_STATUS_CHOICES = [
+        ('NOT_REQUIRED', 'Not Required'),
+        ('PENDING', 'Pending'),
+        ('GAZETTED', 'Gazetted'),
+    ]
+    requires_gazettement = models.BooleanField(default=False)
+    gazettement_status = models.CharField(
+        max_length=20, choices=GAZETTEMENT_STATUS_CHOICES, default='NOT_REQUIRED'
+    )
     current_location = models.ForeignKey(
         Location, on_delete=models.SET_NULL, null=True, blank=True, related_name='files_here'
     )
@@ -83,6 +92,10 @@ class CaseFile(models.Model):
 
     def save(self, *args, **kwargs):
         regenerate = kwargs.pop('regenerate_qr', False)
+        if self.requires_gazettement and self.gazettement_status == 'NOT_REQUIRED':
+            self.gazettement_status = 'PENDING'
+        elif not self.requires_gazettement:
+            self.gazettement_status = 'NOT_REQUIRED'
         super().save(*args, **kwargs)
         if not self.qr_code or regenerate:
             self.generate_qr_code()
@@ -126,3 +139,24 @@ class FileMovement(models.Model):
 
     class Meta:
         ordering = ['-timestamp']
+
+
+class Gazettement(models.Model):
+    case_file = models.ForeignKey(CaseFile, on_delete=models.CASCADE, related_name='gazettements')
+    gazette_notice_number = models.CharField(max_length=100)
+    gazette_date = models.DateField()
+    volume_issue = models.CharField(max_length=100, blank=True)
+    remarks = models.TextField(blank=True)
+    logged_by = models.CharField(max_length=100)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.case_file.gazettement_status = 'GAZETTED'
+        self.case_file.save(update_fields=['gazettement_status'])
+
+    def __str__(self):
+        return f"{self.case_file.reference_number}: Notice {self.gazette_notice_number}"
+
+    class Meta:
+        ordering = ['-gazette_date']

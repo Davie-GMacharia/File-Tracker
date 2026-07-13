@@ -7,7 +7,10 @@ interface Location { id: number; name: string; }
 export default function NewCaseFile() {
   const navigate = useNavigate();
   const [locations, setLocations] = useState<Location[]>([]);
-  const [form, setForm] = useState({ reference_number: '', title: '', registry: '', status: 'ACTIVE', current_location: '' });
+  const [form, setForm] = useState({
+    reference_number: '', title: '', registry: '', status: 'ACTIVE',
+    current_location: '', requires_gazettement: false,
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -15,8 +18,14 @@ export default function NewCaseFile() {
     axios.get('/api/locations/').then(r => setLocations(r.data));
   }, []);
 
-  const handle = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-    setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+  const handle = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    if (type === 'checkbox') {
+      setForm(f => ({ ...f, [name]: (e.target as HTMLInputElement).checked }));
+    } else {
+      setForm(f => ({ ...f, [name]: value }));
+    }
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +45,6 @@ export default function NewCaseFile() {
       <h2 style={{ fontWeight: 800, fontSize: '1.5em', color: '#006600', marginBottom: 24 }}>
         ⚖️ Register New Case File
       </h2>
-
       <div className="card">
         <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           {error && (
@@ -44,18 +52,15 @@ export default function NewCaseFile() {
               {error}
             </div>
           )}
-
           <div style={field}>
             <label style={label}>Reference Number *</label>
             <input name="reference_number" placeholder="e.g. MCSOE033/2022" value={form.reference_number} onChange={handle} required />
             <span style={hint}>Use the official court file reference format</span>
           </div>
-
           <div style={field}>
             <label style={label}>Case Title / Parties</label>
             <input name="title" placeholder="e.g. Republic v John Doe" value={form.title} onChange={handle} />
           </div>
-
           <div style={{ display: 'flex', gap: 12 }}>
             <div style={{ ...field, flex: 1 }}>
               <label style={label}>Registry *</label>
@@ -66,7 +71,6 @@ export default function NewCaseFile() {
                 <option value="SUCCESSION">Succession</option>
               </select>
             </div>
-
             <div style={{ ...field, flex: 1 }}>
               <label style={label}>Status *</label>
               <select name="status" value={form.status} onChange={handle} required>
@@ -76,7 +80,6 @@ export default function NewCaseFile() {
               </select>
             </div>
           </div>
-
           <div style={field}>
             <label style={label}>Current Location *</label>
             <select name="current_location" value={form.current_location} onChange={handle} required>
@@ -84,7 +87,19 @@ export default function NewCaseFile() {
               {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
             </select>
           </div>
-
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f5f5f0', borderRadius: 8, padding: '12px 14px' }}>
+            <input
+              type="checkbox"
+              id="requires_gazettement"
+              name="requires_gazettement"
+              checked={form.requires_gazettement}
+              onChange={handle}
+              style={{ width: 'auto' }}
+            />
+            <label htmlFor="requires_gazettement" style={{ fontSize: '0.9em', fontWeight: 600, color: '#444', cursor: 'pointer' }}>
+              📰 This case requires gazettement
+            </label>
+          </div>
           <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
             <button type="button" className="btn btn-outline" style={{ flex: 1 }} onClick={() => navigate('/')}>
               Cancel
