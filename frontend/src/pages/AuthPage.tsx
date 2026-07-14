@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function AuthPage() {
   const { login, register } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as any)?.from?.pathname || '/';
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [form, setForm] = useState({ username: '', password: '', email: '', first_name: '', last_name: '' });
   const [showPass, setShowPass] = useState(false);
@@ -20,7 +22,7 @@ export default function AuthPage() {
     try {
       if (mode === 'login') await login(form.username, form.password);
       else await register(form);
-      navigate('/');
+      navigate(from, { replace: true });
     } catch (err: any) {
       const data = err?.response?.data;
       if (data) setError(Object.values(data).flat().join(' '));
