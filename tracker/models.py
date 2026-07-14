@@ -133,6 +133,14 @@ class FileMovement(models.Model):
         super().save(*args, **kwargs)
         self.case_file.current_location = self.to_location
         self.case_file.save(update_fields=['current_location'])
+        Notification.objects.create(
+            case_file=self.case_file,
+            message=(
+                f'{self.case_file.reference_number} moved from '
+                f'{self.from_location or "Unknown"} to {self.to_location} '
+                f'by {self.handled_by}'
+            ),
+        )
 
     def __str__(self):
         return f"{self.case_file.reference_number}: {self.from_location} -> {self.to_location}"
@@ -160,3 +168,22 @@ class Gazettement(models.Model):
 
     class Meta:
         ordering = ['-gazette_date']
+
+
+class Notification(models.Model):
+    case_file = models.ForeignKey(CaseFile, on_delete=models.CASCADE, related_name='notifications')
+    message = models.CharField(max_length=255)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return self.message
+
+    class Meta:
+        ordering = ['-created_at']
+
+
+class NotificationRead(models.Model):
+    """Tracks the last notification a given user has seen, to compute unread counts."""
+    user = models.OneToOneField('auth.User', on_delete=models.CASCADE, related_name='notification_read')
+    last_seen_notification_id = models.IntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)

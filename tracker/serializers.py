@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import CaseFile, FileMovement, Location, Gazettement
+from .models import CaseFile, FileMovement, Location, Gazettement, Notification
 
 
 class LocationSerializer(serializers.ModelSerializer):
@@ -33,6 +33,14 @@ class MovementListSerializer(serializers.ModelSerializer):
             'id', 'reference_number', 'registry', 'from_location',
             'to_location_name', 'handled_by', 'remarks', 'timestamp',
         ]
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    reference_number = serializers.StringRelatedField(source='case_file', read_only=True)
+
+    class Meta:
+        model = Notification
+        fields = ['id', 'reference_number', 'message', 'created_at']
 
 
 class CaseFileListSerializer(serializers.ModelSerializer):

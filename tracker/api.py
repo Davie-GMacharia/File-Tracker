@@ -10,8 +10,9 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
 from openpyxl.utils import get_column_letter
 
-from .models import CaseFile, Location, FileMovement, Gazettement
+from .models import CaseFile, Location, FileMovement, Gazettement, Notification, NotificationRead
 from .serializers import (
+    NotificationSerializer,
     GazettementSerializer,
     CaseFileListSerializer,
     CaseFileDetailSerializer,
@@ -50,11 +51,9 @@ class CaseFileDetailView(generics.RetrieveAPIView):
     queryset = CaseFile.objects.select_related('current_location').prefetch_related('movements')
     serializer_class = CaseFileDetailSerializer
     lookup_field = 'reference_number'
-    permission_classes = [permissions.AllowAny]
 
 
 @api_view(['POST'])
-@permission_classes([permissions.AllowAny])
 def log_gazettement(request, reference_number):
     case_file = get_object_or_404(CaseFile, reference_number=reference_number)
     serializer = GazettementSerializer(data=request.data)
@@ -69,7 +68,6 @@ class PendingGazettementView(generics.ListAPIView):
         requires_gazettement=True, gazettement_status='PENDING'
     ).select_related('current_location')
     serializer_class = CaseFileListSerializer
-    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -88,7 +86,6 @@ class MovementListView(generics.ListAPIView):
     queryset = FileMovement.objects.select_related(
         'case_file', 'from_location', 'to_location'
     ).order_by('-timestamp')
-    permission_classes = [permissions.AllowAny]
 
     def get_serializer_class(self):
         from .serializers import MovementListSerializer
@@ -121,13 +118,31 @@ class MovementListView(generics.ListAPIView):
         return qs
 
 
+@api_view(['GET'])
+def notifications_list(request):
+    notifications = Notification.objects.select_related('case_file').order_by('-created_at')[:50]
+    read_state, _ = NotificationRead.objects.get_or_create(user=request.user)
+    unread_count = Notification.objects.filter(id__gt=read_state.last_seen_notification_id).count()
+    serializer = NotificationSerializer(notifications, many=True)
+    return Response({'notifications': serializer.data, 'unread_count': unread_count})
+
+
+@api_view(['POST'])
+def mark_notifications_read(request):
+    latest = Notification.objects.order_by('-id').first()
+    latest_id = latest.id if latest else 0
+    read_state, _ = NotificationRead.objects.get_or_create(user=request.user)
+    read_state.last_seen_notification_id = latest_id
+    read_state.save(update_fields=['last_seen_notification_id'])
+    return Response({'status': 'ok', 'last_seen_notification_id': latest_id})
+
+
 class LocationListView(generics.ListAPIView):
     queryset = Location.objects.all()
     serializer_class = LocationSerializer
 
 
 @api_view(['POST'])
-@permission_classes([permissions.AllowAny])
 def log_movement(request, reference_number):
     case_file = get_object_or_404(CaseFile, reference_number=reference_number)
     serializer = FileMovementSerializer(data=request.data)
@@ -138,7 +153,6 @@ def log_movement(request, reference_number):
 
 
 @api_view(['POST'])
-@permission_classes([permissions.AllowAny])
 def bulk_log_movement(request):
     reference_numbers = request.data.get('reference_numbers', [])
     to_location_id = request.data.get('to_location')
@@ -179,7 +193,6 @@ def bulk_log_movement(request):
 
 
 @api_view(['GET'])
-@permission_classes([permissions.AllowAny])
 def export_movement_history(request, reference_number):
     case_file = get_object_or_404(
         CaseFile.objects.select_related('current_location').prefetch_related(

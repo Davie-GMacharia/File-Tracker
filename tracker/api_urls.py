@@ -10,5 +10,7 @@ urlpatterns = [
     path('case-files/<str:reference_number>/gazettements/', api.log_gazettement, name='api_log_gazettement'),
     path('gazettements/pending/', api.PendingGazettementView.as_view(), name='api_pending_gazettement'),
     path('movements/', api.MovementListView.as_view(), name='api_movement_list'),
+    path('notifications/', api.notifications_list, name='api_notifications_list'),
+    path('notifications/mark-read/', api.mark_notifications_read, name='api_notifications_mark_read'),
     path('locations/', api.LocationListView.as_view(), name='api_location_list'),
 ]
