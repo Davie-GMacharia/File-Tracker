@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AuthPage from './pages/AuthPage';
 import Navbar from './components/Navbar';
@@ -11,7 +11,8 @@ import './index.css';
 
 function ProtectedLayout() {
   const { token } = useAuth();
-  if (!token) return <Navigate to="/auth" replace />;
+  const location = useLocation();
+  if (!token) return <Navigate to="/auth" state={{ from: location }} replace />;
   return (
     <>
       <Navbar />

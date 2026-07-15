@@ -91,6 +91,7 @@ class CaseFile(models.Model):
         self.qr_code.save(filename, ContentFile(buffer.getvalue()), save=False)
 
     def save(self, *args, **kwargs):
+        is_new = self._state.adding
         regenerate = kwargs.pop('regenerate_qr', False)
         if self.requires_gazettement and self.gazettement_status == 'NOT_REQUIRED':
             self.gazettement_status = 'PENDING'
@@ -100,6 +101,11 @@ class CaseFile(models.Model):
         if not self.qr_code or regenerate:
             self.generate_qr_code()
             super().save(update_fields=['qr_code'])
+        if is_new:
+            Notification.objects.create(
+                case_file=self,
+                message=f'New case file logged: {self.reference_number} ({self.get_registry_display()})',
+            )
 
     class Meta:
         ordering = ['-created_at']
@@ -159,9 +165,18 @@ class Gazettement(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
 
     def save(self, *args, **kwargs):
+        is_new = self._state.adding
         super().save(*args, **kwargs)
         self.case_file.gazettement_status = 'GAZETTED'
         self.case_file.save(update_fields=['gazettement_status'])
+        if is_new:
+            Notification.objects.create(
+                case_file=self.case_file,
+                message=(
+                    f'{self.case_file.reference_number} gazetted — '
+                    f'Notice {self.gazette_notice_number} by {self.logged_by}'
+                ),
+            )
 
     def __str__(self):
         return f"{self.case_file.reference_number}: Notice {self.gazette_notice_number}"

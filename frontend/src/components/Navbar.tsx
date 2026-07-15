@@ -1,4 +1,5 @@
 import { useAuth } from '../context/AuthContext';
+import NotificationBell from './NotificationBell';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function Navbar() {
@@ -34,6 +35,7 @@ export default function Navbar() {
         </div>
 
         <div className="navbar-user" style={styles.userArea}>
+          <NotificationBell />
           <span className="navbar-username" style={styles.userName}>👤 {user?.username}</span>
           <button onClick={logout} className="btn btn-outline" style={{ padding:'6px 14px', fontSize:'0.85em' }}>
             Sign Out
