@@ -120,26 +120,40 @@ class MovementListView(generics.ListAPIView):
 
 @api_view(['GET'])
 def notifications_list(request):
-    notifications = Notification.objects.select_related('case_file').order_by('-created_at')[:50]
-    read_state, _ = NotificationRead.objects.get_or_create(user=request.user)
-    unread_count = Notification.objects.filter(id__gt=read_state.last_seen_notification_id).count()
-    serializer = NotificationSerializer(notifications, many=True)
-    return Response({'notifications': serializer.data, 'unread_count': unread_count})
+    unread_qs = Notification.objects.select_related('case_file').exclude(
+        read_by=request.user
+    ).order_by('-created_at')[:50]
+    serializer = NotificationSerializer(unread_qs, many=True)
+    return Response({'notifications': serializer.data, 'unread_count': unread_qs.count()})
 
 
 @api_view(['POST'])
-def mark_notifications_read(request):
-    latest = Notification.objects.order_by('-id').first()
-    latest_id = latest.id if latest else 0
-    read_state, _ = NotificationRead.objects.get_or_create(user=request.user)
-    read_state.last_seen_notification_id = latest_id
-    read_state.save(update_fields=['last_seen_notification_id'])
-    return Response({'status': 'ok', 'last_seen_notification_id': latest_id})
+def mark_notification_read(request, notification_id):
+    notification = get_object_or_404(Notification, id=notification_id)
+    notification.read_by.add(request.user)
+    unread_count = Notification.objects.exclude(read_by=request.user).count()
+    return Response({'status': 'ok', 'unread_count': unread_count})
 
 
 class LocationListView(generics.ListAPIView):
     queryset = Location.objects.all()
     serializer_class = LocationSerializer
+
+
+@api_view(['GET'])
+def location_caseload(request):
+    from django.db.models import Count
+    counts = (
+        Location.objects.annotate(file_count=Count('files_here'))
+        .filter(file_count__gt=0)
+        .values('id', 'name', 'file_count')
+        .order_by('-file_count')
+    )
+    unassigned = CaseFile.objects.filter(current_location__isnull=True).count()
+    data = list(counts)
+    if unassigned:
+        data.append({'id': None, 'name': 'Unassigned', 'file_count': unassigned})
+    return Response(data)
 
 
 @api_view(['POST'])

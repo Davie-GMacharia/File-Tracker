@@ -11,6 +11,7 @@ urlpatterns = [
     path('gazettements/pending/', api.PendingGazettementView.as_view(), name='api_pending_gazettement'),
     path('movements/', api.MovementListView.as_view(), name='api_movement_list'),
     path('notifications/', api.notifications_list, name='api_notifications_list'),
-    path('notifications/mark-read/', api.mark_notifications_read, name='api_notifications_mark_read'),
+    path('notifications/<int:notification_id>/mark-read/', api.mark_notification_read, name='api_notification_mark_read'),
     path('locations/', api.LocationListView.as_view(), name='api_location_list'),
+    path('locations/caseload/', api.location_caseload, name='api_location_caseload'),
 ]

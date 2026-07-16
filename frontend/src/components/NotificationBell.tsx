@@ -26,10 +26,11 @@ export default function NotificationBell() {
 
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000);
+    const interval = setInterval(fetchNotifications, 30000); // poll every 30s
     return () => clearInterval(interval);
   }, [fetchNotifications]);
 
+  // Close dropdown on outside click
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -40,16 +41,13 @@ export default function NotificationBell() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  const handleToggle = async () => {
-    const opening = !open;
-    setOpen(opening);
-    if (opening && unreadCount > 0) {
-      try {
-        await axios.post('/api/notifications/mark-read/');
-        setUnreadCount(0);
-      } catch (err) {
-        console.error('Failed to mark notifications read', err);
-      }
+  const handleNotificationClick = async (id: number) => {
+    try {
+      const res = await axios.post(`/api/notifications/${id}/mark-read/`);
+      setUnreadCount(res.data.unread_count);
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    } catch (err) {
+      console.error('Failed to mark notification read', err);
     }
   };
 
@@ -68,7 +66,7 @@ export default function NotificationBell() {
 
   return (
     <div ref={containerRef} style={styles.container}>
-      <button onClick={handleToggle} style={styles.bellButton} aria-label="Notifications">
+      <button onClick={() => setOpen(o => !o)} style={styles.bellButton} aria-label="Notifications">
         <span style={styles.bellIcon}>🔔</span>
         {unreadCount > 0 && (
           <span style={styles.badge}>{unreadCount > 99 ? '99+' : unreadCount}</span>
@@ -77,16 +75,28 @@ export default function NotificationBell() {
 
       {open && (
         <div style={styles.dropdown}>
-          <div style={styles.dropdownHeader}>Notifications</div>
+          <div style={styles.dropdownHeader}>
+            Notifications
+            {unreadCount > 0 && <span style={styles.headerCount}>{unreadCount} new</span>}
+          </div>
           <div style={styles.list}>
             {notifications.length === 0 ? (
-              <div style={styles.empty}>No notifications yet.</div>
+              <div style={styles.empty}>You're all caught up.</div>
             ) : (
               notifications.map(n => (
-                <div key={n.id} style={styles.item}>
-                  <div style={styles.itemRef}>{n.reference_number}</div>
-                  <div style={styles.itemMessage}>{n.message}</div>
-                  <div style={styles.itemTime}>{formatTime(n.created_at)}</div>
+                <div
+                  key={n.id}
+                  style={styles.item}
+                  onClick={() => handleNotificationClick(n.id)}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <div style={styles.itemDot} />
+                  <div style={styles.itemBody}>
+                    <div style={styles.itemRef}>{n.reference_number}</div>
+                    <div style={styles.itemMessage}>{n.message}</div>
+                    <div style={styles.itemTime}>{formatTime(n.created_at)}</div>
+                  </div>
                 </div>
               ))
             )}
@@ -128,8 +138,8 @@ const styles: Record<string, React.CSSProperties> = {
     position: 'absolute',
     top: '120%',
     right: 0,
-    width: 340,
-    maxHeight: 420,
+    width: 360,
+    maxHeight: 440,
     background: '#fff',
     color: '#222',
     borderRadius: 10,
@@ -144,10 +154,38 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 700,
     borderBottom: '1px solid #eee',
     background: '#f7f7f7',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    fontSize: '0.95em',
   },
-  list: { overflowY: 'auto', maxHeight: 370 },
-  empty: { padding: '24px 16px', textAlign: 'center', color: '#888', fontSize: '0.9em' },
-  item: { padding: '10px 16px', borderBottom: '1px solid #f0f0f0' },
+  headerCount: {
+    fontSize: '0.75em',
+    fontWeight: 700,
+    color: '#006600',
+    background: '#e8f5e9',
+    borderRadius: 12,
+    padding: '2px 9px',
+  },
+  list: { overflowY: 'auto', maxHeight: 390 },
+  empty: { padding: '28px 16px', textAlign: 'center', color: '#888', fontSize: '0.9em' },
+  item: {
+    display: 'flex',
+    gap: 10,
+    padding: '11px 16px',
+    borderBottom: '1px solid #f0f0f0',
+    cursor: 'pointer',
+    transition: 'background 0.15s',
+  },
+  itemDot: {
+    width: 8,
+    height: 8,
+    borderRadius: '50%',
+    background: '#006600',
+    marginTop: 6,
+    flexShrink: 0,
+  },
+  itemBody: { flex: 1, minWidth: 0 },
   itemRef: { fontWeight: 700, fontSize: '0.85em', color: '#006600' },
   itemMessage: { fontSize: '0.88em', margin: '2px 0', color: '#333' },
   itemTime: { fontSize: '0.75em', color: '#999' },
