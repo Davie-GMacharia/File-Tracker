@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import type { CaseFile } from '../types';
+import LocationCaseloadChart from '../components/LocationCaseloadChart';
 
 export default function CaseFileList() {
   const navigate = useNavigate();
@@ -183,6 +184,7 @@ export default function CaseFileList() {
           )}
         </div>
       )}
+      <LocationCaseloadChart />
     </div>
   );
 }
