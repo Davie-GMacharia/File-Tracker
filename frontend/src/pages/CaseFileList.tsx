@@ -15,7 +15,7 @@ export default function CaseFileList() {
   const [locationFilter, setLocationFilter] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [locations, setLocations] = useState<{ id: number; name: string }[]>([]);
-  const [bulkForm, setBulkForm] = useState({ to_location: '', handled_by: '', remarks: '' });
+  const [bulkForm, setBulkForm] = useState({ to_location: '', remarks: '' });
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
   const [bulkResult, setBulkResult] = useState<{ succeeded: string[]; failed: any[] } | null>(null);
 
@@ -40,12 +40,11 @@ export default function CaseFileList() {
       const res = await axios.post('/api/case-files/bulk-movements/', {
         reference_numbers: Array.from(selected),
         to_location: bulkForm.to_location,
-        handled_by: bulkForm.handled_by,
         remarks: bulkForm.remarks,
       });
       setBulkResult(res.data);
       setSelected(new Set());
-      setBulkForm({ to_location: '', handled_by: '', remarks: '' });
+      setBulkForm({ to_location: '', remarks: '' });
       doFetch();
     } catch {
       setBulkResult({ succeeded: [], failed: [{ error: 'Request failed' }] });
@@ -158,15 +157,11 @@ export default function CaseFileList() {
                 {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
               </select>
             </div>
-            <div style={{ flex: 1, minWidth: 160 }}>
-              <label style={{ fontSize: '0.85em', fontWeight: 600, color: '#444', display: 'block', marginBottom: 4 }}>Your Name *</label>
-              <input value={bulkForm.handled_by} onChange={e => setBulkForm(f => ({ ...f, handled_by: e.target.value }))} placeholder="Full name" style={{ width: '100%' }} />
-            </div>
             <div style={{ flex: 2, minWidth: 200 }}>
               <label style={{ fontSize: '0.85em', fontWeight: 600, color: '#444', display: 'block', marginBottom: 4 }}>Remarks (optional)</label>
               <input value={bulkForm.remarks} onChange={e => setBulkForm(f => ({ ...f, remarks: e.target.value }))} placeholder="Notes…" style={{ width: '100%' }} />
             </div>
-            <button className="btn btn-primary" disabled={bulkSubmitting || !bulkForm.to_location || !bulkForm.handled_by} onClick={submitBulkMove}>
+            <button className="btn btn-primary" disabled={bulkSubmitting || !bulkForm.to_location} onClick={submitBulkMove}>
               {bulkSubmitting ? 'Moving…' : `✓ Move ${selected.size} File${selected.size > 1 ? 's' : ''}`}
             </button>
           </div>

@@ -23,13 +23,13 @@ export default function FileDetail() {
   const navigate = useNavigate();
   const [file, setFile] = useState<CaseFileDetail | null>(null);
   const [locations, setLocations] = useState<Location[]>([]);
-  const [form, setForm] = useState({ to_location: '', handled_by: '', remarks: '' });
+  const [form, setForm] = useState({ to_location: '', remarks: '' });
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [downloading, setDownloading] = useState(false);
 
-  const [gazForm, setGazForm] = useState({ gazette_notice_number: '', gazette_date: '', volume_issue: '', remarks: '', logged_by: '' });
+  const [gazForm, setGazForm] = useState({ gazette_notice_number: '', gazette_date: '', volume_issue: '', remarks: '' });
   const [gazSubmitting, setGazSubmitting] = useState(false);
   const [gazSuccess, setGazSuccess] = useState('');
   const [gazError, setGazError] = useState('');
@@ -55,7 +55,7 @@ export default function FileDetail() {
     try {
       await axios.post(`/api/case-files/${reference_number}/movements/`, form);
       setSuccess('Movement logged successfully!');
-      setForm({ to_location: '', handled_by: '', remarks: '' });
+      setForm({ to_location: '', remarks: '' });
       load();
     } catch (err: any) {
       const data = err?.response?.data;
@@ -70,7 +70,7 @@ export default function FileDetail() {
     try {
       await axios.post(`/api/case-files/${reference_number}/gazettements/`, gazForm);
       setGazSuccess('Gazettement logged successfully!');
-      setGazForm({ gazette_notice_number: '', gazette_date: '', volume_issue: '', remarks: '', logged_by: '' });
+      setGazForm({ gazette_notice_number: '', gazette_date: '', volume_issue: '', remarks: '' });
       load();
     } catch (err: any) {
       const data = err?.response?.data;
@@ -175,10 +175,6 @@ export default function FileDetail() {
                 </select>
               </div>
               <div style={field}>
-                <label style={label}>Your Name *</label>
-                <input name="handled_by" placeholder="Full name of staff handling this movement" value={form.handled_by} onChange={handle} required />
-              </div>
-              <div style={field}>
                 <label style={label}>Remarks (optional)</label>
                 <textarea name="remarks" rows={2} placeholder="Any notes about this movement…" value={form.remarks} onChange={handle}
                   style={{ width: '100%', padding: '11px 14px', border: '1.5px solid #ccc', borderRadius: 8, fontSize: '1em', resize: 'vertical', fontFamily: 'inherit' }} />
@@ -209,10 +205,6 @@ export default function FileDetail() {
                 <div style={field}>
                   <label style={label}>Volume / Issue (optional)</label>
                   <input name="volume_issue" placeholder="e.g. Vol. 45, Issue 12" value={gazForm.volume_issue} onChange={handleGaz} />
-                </div>
-                <div style={field}>
-                  <label style={label}>Your Name *</label>
-                  <input name="logged_by" placeholder="Full name of staff logging this" value={gazForm.logged_by} onChange={handleGaz} required />
                 </div>
                 <div style={field}>
                   <label style={label}>Remarks (optional)</label>

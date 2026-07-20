@@ -57,9 +57,12 @@ class CaseFileDetailView(generics.RetrieveAPIView):
 @api_view(['POST'])
 def log_gazettement(request, reference_number):
     case_file = get_object_or_404(CaseFile, reference_number=reference_number)
-    serializer = GazettementSerializer(data=request.data)
+    data = request.data.copy()
+    data.pop('logged_by', None)
+    serializer = GazettementSerializer(data=data)
     if serializer.is_valid():
-        serializer.save(case_file=case_file)
+        logged_by = request.user.get_full_name() or request.user.username
+        serializer.save(case_file=case_file, logged_by=logged_by)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -203,9 +206,12 @@ def location_caseload(request):
 @api_view(['POST'])
 def log_movement(request, reference_number):
     case_file = get_object_or_404(CaseFile, reference_number=reference_number)
-    serializer = FileMovementSerializer(data=request.data)
+    data = request.data.copy()
+    data.pop('handled_by', None)
+    serializer = FileMovementSerializer(data=data)
     if serializer.is_valid():
-        serializer.save(case_file=case_file, from_location=case_file.current_location)
+        handled_by = request.user.get_full_name() or request.user.username
+        serializer.save(case_file=case_file, from_location=case_file.current_location, handled_by=handled_by)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -214,12 +220,12 @@ def log_movement(request, reference_number):
 def bulk_log_movement(request):
     reference_numbers = request.data.get('reference_numbers', [])
     to_location_id = request.data.get('to_location')
-    handled_by = request.data.get('handled_by', '').strip()
     remarks = request.data.get('remarks', '')
+    handled_by = request.user.get_full_name() or request.user.username
 
-    if not reference_numbers or not to_location_id or not handled_by:
+    if not reference_numbers or not to_location_id:
         return Response(
-            {'detail': 'reference_numbers, to_location, and handled_by are all required.'},
+            {'detail': 'reference_numbers and to_location are required.'},
             status=status.HTTP_400_BAD_REQUEST,
         )
 

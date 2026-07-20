@@ -18,7 +18,7 @@ class FileMovementSerializer(serializers.ModelSerializer):
             'id', 'from_location', 'to_location', 'to_location_name',
             'handled_by', 'remarks', 'timestamp',
         ]
-        read_only_fields = ['from_location', 'timestamp']
+        read_only_fields = ['from_location', 'timestamp', 'handled_by']
 
 
 class MovementListSerializer(serializers.ModelSerializer):
@@ -61,6 +61,7 @@ class GazettementSerializer(serializers.ModelSerializer):
             'id', 'gazette_notice_number', 'gazette_date',
             'volume_issue', 'remarks', 'logged_by', 'created_at',
         ]
+        read_only_fields = ['logged_by']
 
 
 class CaseFileDetailSerializer(serializers.ModelSerializer):
