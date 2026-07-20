@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 interface Notification {
   id: number;
@@ -8,9 +9,25 @@ interface Notification {
   created_at: string;
 }
 
+interface StaleFile {
+  reference_number: string;
+  title: string;
+  days_stale: number;
+  current_location: string;
+}
+
+interface PendingGazettement {
+  reference_number: string;
+  title: string;
+  days_pending: number;
+}
+
 export default function NotificationBell() {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [staleFiles, setStaleFiles] = useState<StaleFile[]>([]);
+  const [pendingGazettement, setPendingGazettement] = useState<PendingGazettement[]>([]);
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -24,13 +41,26 @@ export default function NotificationBell() {
     }
   }, []);
 
+  const fetchAlerts = useCallback(async () => {
+    try {
+      const res = await axios.get('/api/alerts/stale/');
+      setStaleFiles(res.data.stale_files);
+      setPendingGazettement(res.data.pending_gazettement);
+    } catch (err) {
+      console.error('Failed to fetch stale alerts', err);
+    }
+  }, []);
+
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000); // poll every 30s
+    fetchAlerts();
+    const interval = setInterval(() => {
+      fetchNotifications();
+      fetchAlerts();
+    }, 30000);
     return () => clearInterval(interval);
-  }, [fetchNotifications]);
+  }, [fetchNotifications, fetchAlerts]);
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -51,6 +81,11 @@ export default function NotificationBell() {
     }
   };
 
+  const goToFile = (reference_number: string) => {
+    setOpen(false);
+    navigate(`/file/${encodeURIComponent(reference_number)}`);
+  };
+
   const formatTime = (iso: string) => {
     const date = new Date(iso);
     const diffMs = Date.now() - date.getTime();
@@ -64,12 +99,16 @@ export default function NotificationBell() {
     return date.toLocaleDateString();
   };
 
+  const totalAlerts = staleFiles.length + pendingGazettement.length;
+  const badgeCount = unreadCount + totalAlerts;
+  const isEmpty = notifications.length === 0 && totalAlerts === 0;
+
   return (
     <div ref={containerRef} style={styles.container}>
       <button onClick={() => setOpen(o => !o)} style={styles.bellButton} aria-label="Notifications">
         <span style={styles.bellIcon}>🔔</span>
-        {unreadCount > 0 && (
-          <span style={styles.badge}>{unreadCount > 99 ? '99+' : unreadCount}</span>
+        {badgeCount > 0 && (
+          <span style={styles.badge}>{badgeCount > 99 ? '99+' : badgeCount}</span>
         )}
       </button>
 
@@ -80,25 +119,66 @@ export default function NotificationBell() {
             {unreadCount > 0 && <span style={styles.headerCount}>{unreadCount} new</span>}
           </div>
           <div style={styles.list}>
-            {notifications.length === 0 ? (
+            {isEmpty ? (
               <div style={styles.empty}>You're all caught up.</div>
             ) : (
-              notifications.map(n => (
-                <div
-                  key={n.id}
-                  style={styles.item}
-                  onClick={() => handleNotificationClick(n.id)}
-                  role="button"
-                  tabIndex={0}
-                >
-                  <div style={styles.itemDot} />
-                  <div style={styles.itemBody}>
-                    <div style={styles.itemRef}>{n.reference_number}</div>
-                    <div style={styles.itemMessage}>{n.message}</div>
-                    <div style={styles.itemTime}>{formatTime(n.created_at)}</div>
+              <>
+                {totalAlerts > 0 && (
+                  <div style={styles.alertSection}>
+                    <div style={styles.alertSectionTitle}>⚠️ Attention Needed</div>
+                    {staleFiles.map(f => (
+                      <div
+                        key={`stale-${f.reference_number}`}
+                        style={styles.alertItem}
+                        onClick={() => goToFile(f.reference_number)}
+                        role="button"
+                        tabIndex={0}
+                      >
+                        <div style={{ ...styles.itemDot, background: '#c8a951' }} />
+                        <div style={styles.itemBody}>
+                          <div style={styles.itemRef}>{f.reference_number}</div>
+                          <div style={styles.itemMessage}>
+                            No movement in {f.days_stale} days — still at {f.current_location}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {pendingGazettement.map(g => (
+                      <div
+                        key={`gazette-${g.reference_number}`}
+                        style={styles.alertItem}
+                        onClick={() => goToFile(g.reference_number)}
+                        role="button"
+                        tabIndex={0}
+                      >
+                        <div style={{ ...styles.itemDot, background: '#bb0000' }} />
+                        <div style={styles.itemBody}>
+                          <div style={styles.itemRef}>{g.reference_number}</div>
+                          <div style={styles.itemMessage}>
+                            Gazettement pending {g.days_pending} days
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </div>
-              ))
+                )}
+                {notifications.map(n => (
+                  <div
+                    key={n.id}
+                    style={styles.item}
+                    onClick={() => handleNotificationClick(n.id)}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div style={styles.itemDot} />
+                    <div style={styles.itemBody}>
+                      <div style={styles.itemRef}>{n.reference_number}</div>
+                      <div style={styles.itemMessage}>{n.message}</div>
+                      <div style={styles.itemTime}>{formatTime(n.created_at)}</div>
+                    </div>
+                  </div>
+                ))}
+              </>
             )}
           </div>
         </div>
@@ -138,8 +218,8 @@ const styles: Record<string, React.CSSProperties> = {
     position: 'absolute',
     top: '120%',
     right: 0,
-    width: 360,
-    maxHeight: 440,
+    width: 380,
+    maxHeight: 480,
     background: '#fff',
     color: '#222',
     borderRadius: 10,
@@ -167,8 +247,23 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 12,
     padding: '2px 9px',
   },
-  list: { overflowY: 'auto', maxHeight: 390 },
+  list: { overflowY: 'auto', maxHeight: 430 },
   empty: { padding: '28px 16px', textAlign: 'center', color: '#888', fontSize: '0.9em' },
+  alertSection: { background: '#fffaf0', borderBottom: '2px solid #f0e0c0' },
+  alertSectionTitle: {
+    fontSize: '0.78em',
+    fontWeight: 700,
+    color: '#996600',
+    padding: '8px 16px 4px',
+    letterSpacing: '0.3px',
+  },
+  alertItem: {
+    display: 'flex',
+    gap: 10,
+    padding: '9px 16px',
+    cursor: 'pointer',
+    transition: 'background 0.15s',
+  },
   item: {
     display: 'flex',
     gap: 10,

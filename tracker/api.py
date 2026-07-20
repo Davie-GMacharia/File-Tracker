@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -138,6 +139,49 @@ def mark_notification_read(request, notification_id):
 class LocationListView(generics.ListAPIView):
     queryset = Location.objects.all()
     serializer_class = LocationSerializer
+
+
+@api_view(['GET'])
+def stale_alerts(request):
+    from datetime import timedelta
+    now = timezone.now()
+    movement_threshold = now - timedelta(days=14)
+    gazettement_threshold = now - timedelta(days=30)
+
+    active_files = CaseFile.objects.filter(status='ACTIVE').prefetch_related('movements')
+    stale_files = []
+    for cf in active_files:
+        last_movement = cf.movements.order_by('-timestamp').first()
+        reference_date = last_movement.timestamp if last_movement else cf.created_at
+        if reference_date < movement_threshold:
+            stale_files.append({
+                'reference_number': cf.reference_number,
+                'title': cf.title,
+                'days_stale': (now - reference_date).days,
+                'current_location': str(cf.current_location) if cf.current_location else 'Unknown',
+            })
+    stale_files.sort(key=lambda x: -x['days_stale'])
+
+    pending_gazettement_qs = CaseFile.objects.filter(
+        requires_gazettement=True,
+        gazettement_status='PENDING',
+        created_at__lt=gazettement_threshold,
+    )
+    pending_gazettement = [
+        {
+            'reference_number': cf.reference_number,
+            'title': cf.title,
+            'days_pending': (now - cf.created_at).days,
+        }
+        for cf in pending_gazettement_qs
+    ]
+    pending_gazettement.sort(key=lambda x: -x['days_pending'])
+
+    return Response({
+        'stale_files': stale_files,
+        'pending_gazettement': pending_gazettement,
+        'total_alerts': len(stale_files) + len(pending_gazettement),
+    })
 
 
 @api_view(['GET'])

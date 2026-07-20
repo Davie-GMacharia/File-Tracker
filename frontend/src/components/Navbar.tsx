@@ -18,7 +18,7 @@ export default function Navbar() {
     <nav style={styles.nav}>
       <div className="navbar-inner" style={styles.inner}>
         <div style={styles.brand} onClick={() => navigate('/')}>
-          <span style={styles.icons}>⚖️ 🔨</span>
+          <span style={styles.icons}>⚖️ 🇰🇪</span>
           <div>
             <div style={styles.brandName}>Judiciary File Tracker</div>
             <div style={styles.brandSub}>Engineer Law Courts</div>

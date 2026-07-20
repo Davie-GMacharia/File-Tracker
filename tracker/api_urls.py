@@ -14,4 +14,5 @@ urlpatterns = [
     path('notifications/<int:notification_id>/mark-read/', api.mark_notification_read, name='api_notification_mark_read'),
     path('locations/', api.LocationListView.as_view(), name='api_location_list'),
     path('locations/caseload/', api.location_caseload, name='api_location_caseload'),
+    path('alerts/stale/', api.stale_alerts, name='api_stale_alerts'),
 ]
